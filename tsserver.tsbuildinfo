@@ -1,0 +1,149 @@
+{
+  "bundle": {
+    "commonSourceDirectory": "../../src",
+    "sourceFiles": [
+      "../../src/tsserver/server.ts"
+    ],
+    "js": {
+      "sections": [
+        {
+          "pos": 0,
+          "end": 13,
+          "kind": "prologue",
+          "data": "use strict"
+        },
+        {
+          "pos": 14,
+          "end": 341,
+          "kind": "emitHelpers",
+          "data": "typescript:spreadArrays"
+        },
+        {
+          "pos": 342,
+          "end": 724,
+          "kind": "emitHelpers",
+          "data": "typescript:assign"
+        },
+        {
+          "pos": 725,
+          "end": 953,
+          "kind": "emitHelpers",
+          "data": "typescript:makeTemplateObject"
+        },
+        {
+          "pos": 954,
+          "end": 2744,
+          "kind": "emitHelpers",
+          "data": "typescript:generator"
+        },
+        {
+          "pos": 2745,
+          "end": 3235,
+          "kind": "emitHelpers",
+          "data": "typescript:rest"
+        },
+        {
+          "pos": 3236,
+          "end": 3821,
+          "kind": "emitHelpers",
+          "data": "typescript:extends"
+        },
+        {
+          "pos": 3822,
+          "end": 6516607,
+          "kind": "prepend",
+          "data": "./compiler.js",
+          "texts": [
+            {
+              "pos": 3822,
+              "end": 6516607,
+              "kind": "text"
+            }
+          ]
+        },
+        {
+          "pos": 6516607,
+          "end": 8646975,
+          "kind": "prepend",
+          "data": "./services.js",
+          "texts": [
+            {
+              "pos": 6516607,
+              "end": 8646975,
+              "kind": "text"
+            }
+          ]
+        },
+        {
+          "pos": 8646975,
+          "end": 8666628,
+          "kind": "prepend",
+          "data": "./jsTyping.js",
+          "texts": [
+            {
+              "pos": 8646975,
+              "end": 8666628,
+              "kind": "text"
+            }
+          ]
+        },
+        {
+          "pos": 8666628,
+          "end": 9231078,
+          "kind": "prepend",
+          "data": "./server.js",
+          "texts": [
+            {
+              "pos": 8666628,
+              "end": 9231078,
+              "kind": "text"
+            }
+          ]
+        },
+        {
+          "pos": 9231078,
+          "end": 9321378,
+          "kind": "prepend",
+          "data": "./compat.js",
+          "texts": [
+            {
+              "pos": 9231078,
+              "end": 9321378,
+              "kind": "text"
+            }
+          ]
+        },
+        {
+          "pos": 9321378,
+          "end": 9374387,
+          "kind": "text"
+        }
+      ],
+      "sources": {
+        "prologues": [
+          {
+            "file": 0,
+            "text": "",
+            "directives": [
+              {
+                "pos": -1,
+                "end": -1,
+                "expression": {
+                  "pos": -1,
+                  "end": -1,
+                  "text": "use strict"
+                }
+              }
+            ]
+          }
+        ],
+        "helpers": [
+          "typescript:extends",
+          "typescript:assign",
+          "typescript:spreadArrays"
+        ]
+      }
+    }
+  },
+  "version": "4.0.0-dev"
+}
