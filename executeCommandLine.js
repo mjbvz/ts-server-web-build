@@ -323,6 +323,7 @@ var ts;
         updateSolutionBuilderHost(sys, cb, buildHost);
         var builder = ts.createSolutionBuilder(buildHost, projects, buildOptions);
         var exitStatus = buildOptions.clean ? builder.clean() : builder.build();
+        ts.tracing.dumpLegend();
         return sys.exit(exitStatus);
     }
     function createReportErrorSummary(sys, options) {
@@ -336,7 +337,7 @@ var ts;
         var currentDirectory = host.getCurrentDirectory();
         var getCanonicalFileName = ts.createGetCanonicalFileName(host.useCaseSensitiveFileNames());
         ts.changeCompilerHostLikeToUseCache(host, function (fileName) { return ts.toPath(fileName, currentDirectory, getCanonicalFileName); });
-        enableStatistics(sys, options);
+        enableStatisticsAndTracing(sys, options, /*isBuildMode*/ false);
         var programOptions = {
             rootNames: fileNames,
             options: options,
@@ -352,7 +353,7 @@ var ts;
     }
     function performIncrementalCompilation(sys, cb, reportDiagnostic, config) {
         var options = config.options, fileNames = config.fileNames, projectReferences = config.projectReferences;
-        enableStatistics(sys, options);
+        enableStatisticsAndTracing(sys, options, /*isBuildMode*/ false);
         var host = ts.createIncrementalCompilerHost(options, sys);
         var exitStatus = ts.performIncrementalCompilation({
             host: host,
@@ -383,7 +384,7 @@ var ts;
         host.createProgram = function (rootNames, options, host, oldProgram, configFileParsingDiagnostics, projectReferences) {
             ts.Debug.assert(rootNames !== undefined || (options === undefined && !!oldProgram));
             if (options !== undefined) {
-                enableStatistics(sys, options);
+                enableStatisticsAndTracing(sys, options, /*isBuildMode*/ true);
             }
             return compileUsingBuilder(rootNames, options, host, oldProgram, configFileParsingDiagnostics, projectReferences);
         };
@@ -428,14 +429,23 @@ var ts;
     function canReportDiagnostics(system, compilerOptions) {
         return system === ts.sys && (compilerOptions.diagnostics || compilerOptions.extendedDiagnostics);
     }
-    function enableStatistics(sys, compilerOptions) {
-        if (canReportDiagnostics(sys, compilerOptions)) {
+    function canTrace(system, compilerOptions) {
+        return system === ts.sys && compilerOptions.generateTrace;
+    }
+    function enableStatisticsAndTracing(system, compilerOptions, isBuildMode) {
+        if (canReportDiagnostics(system, compilerOptions)) {
             ts.performance.enable();
+        }
+        if (canTrace(system, compilerOptions)) {
+            ts.tracing.startTracing(compilerOptions.configFilePath, compilerOptions.generateTrace, isBuildMode);
         }
     }
     function reportStatistics(sys, program) {
-        var statistics;
         var compilerOptions = program.getCompilerOptions();
+        if (canTrace(sys, compilerOptions)) {
+            ts.tracing.stopTracing(program.getTypeCatalog());
+        }
+        var statistics;
         if (canReportDiagnostics(sys, compilerOptions)) {
             statistics = [];
             var memoryUsed = sys.getMemoryUsage ? sys.getMemoryUsage() : -1;

@@ -63,65 +63,65 @@
         },
         {
           "pos": 12532,
-          "end": 6525317,
+          "end": 6656895,
           "kind": "prepend",
           "data": "./compiler.js",
           "texts": [
             {
               "pos": 12532,
-              "end": 6525317,
+              "end": 6656895,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 6525317,
-          "end": 6544970,
+          "pos": 6656895,
+          "end": 6676672,
           "kind": "prepend",
           "data": "./jsTyping.js",
           "texts": [
             {
-              "pos": 6525317,
-              "end": 6544970,
+              "pos": 6656895,
+              "end": 6676672,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 6544970,
-          "end": 8675338,
+          "pos": 6676672,
+          "end": 8840596,
           "kind": "prepend",
           "data": "./services.js",
           "texts": [
             {
-              "pos": 6544970,
-              "end": 8675338,
+              "pos": 6676672,
+              "end": 8840596,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 8675338,
-          "end": 9239788,
+          "pos": 8840596,
+          "end": 9415776,
           "kind": "prepend",
           "data": "./server.js",
           "texts": [
             {
-              "pos": 8675338,
-              "end": 9239788,
+              "pos": 8840596,
+              "end": 9415776,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 9239788,
-          "end": 9330088,
+          "pos": 9415776,
+          "end": 9506076,
           "kind": "prepend",
           "data": "./compat.js",
           "texts": [
             {
-              "pos": 9239788,
-              "end": 9330088,
+              "pos": 9415776,
+              "end": 9506076,
               "kind": "text"
             }
           ]
@@ -139,65 +139,65 @@
         },
         {
           "pos": 0,
-          "end": 288117,
+          "end": 291101,
           "kind": "prepend",
           "data": "./compiler.d.ts",
           "texts": [
             {
               "pos": 0,
-              "end": 288117,
+              "end": 291101,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 288117,
-          "end": 291204,
+          "pos": 291101,
+          "end": 294188,
           "kind": "prepend",
           "data": "./jsTyping.d.ts",
           "texts": [
             {
-              "pos": 288117,
-              "end": 291204,
+              "pos": 291101,
+              "end": 294188,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 291204,
-          "end": 344867,
+          "pos": 294188,
+          "end": 349437,
           "kind": "prepend",
           "data": "./services.d.ts",
           "texts": [
             {
-              "pos": 291204,
-              "end": 344867,
+              "pos": 294188,
+              "end": 349437,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 344867,
-          "end": 480128,
+          "pos": 349437,
+          "end": 485797,
           "kind": "prepend",
           "data": "./server.d.ts",
           "texts": [
             {
-              "pos": 344867,
-              "end": 480128,
+              "pos": 349437,
+              "end": 485797,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 480128,
-          "end": 577303,
+          "pos": 485797,
+          "end": 583010,
           "kind": "prepend",
           "data": "./compat.d.ts",
           "texts": [
             {
-              "pos": 480128,
-              "end": 577303,
+              "pos": 485797,
+              "end": 583010,
               "kind": "text"
             }
           ]

@@ -2,6 +2,8 @@
   "bundle": {
     "commonSourceDirectory": "../../src",
     "sourceFiles": [
+      "../../src/tsserver/nodeServer.ts",
+      "../../src/tsserver/webServer.ts",
       "../../src/tsserver/server.ts"
     ],
     "js": {
@@ -50,72 +52,72 @@
         },
         {
           "pos": 3822,
-          "end": 6516607,
+          "end": 6648185,
           "kind": "prepend",
           "data": "./compiler.js",
           "texts": [
             {
               "pos": 3822,
-              "end": 6516607,
+              "end": 6648185,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 6516607,
-          "end": 8646975,
+          "pos": 6648185,
+          "end": 8812109,
           "kind": "prepend",
           "data": "./services.js",
           "texts": [
             {
-              "pos": 6516607,
-              "end": 8646975,
+              "pos": 6648185,
+              "end": 8812109,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 8646975,
-          "end": 8666628,
+          "pos": 8812109,
+          "end": 8831886,
           "kind": "prepend",
           "data": "./jsTyping.js",
           "texts": [
             {
-              "pos": 8646975,
-              "end": 8666628,
+              "pos": 8812109,
+              "end": 8831886,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 8666628,
-          "end": 9231078,
+          "pos": 8831886,
+          "end": 9407066,
           "kind": "prepend",
           "data": "./server.js",
           "texts": [
             {
-              "pos": 8666628,
-              "end": 9231078,
+              "pos": 8831886,
+              "end": 9407066,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 9231078,
-          "end": 9321378,
+          "pos": 9407066,
+          "end": 9497366,
           "kind": "prepend",
           "data": "./compat.js",
           "texts": [
             {
-              "pos": 9231078,
-              "end": 9321378,
+              "pos": 9407066,
+              "end": 9497366,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 9321378,
-          "end": 9374456,
+          "pos": 9497366,
+          "end": 9551794,
           "kind": "text"
         }
       ],
@@ -139,8 +141,7 @@
         ],
         "helpers": [
           "typescript:extends",
-          "typescript:assign",
-          "typescript:spreadArrays"
+          "typescript:assign"
         ]
       }
     }

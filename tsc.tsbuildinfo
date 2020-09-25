@@ -38,33 +38,33 @@
         },
         {
           "pos": 2745,
-          "end": 6515530,
+          "end": 6647108,
           "kind": "prepend",
           "data": "./compiler.js",
           "texts": [
             {
               "pos": 2745,
-              "end": 6515530,
+              "end": 6647108,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 6515530,
-          "end": 6543287,
+          "pos": 6647108,
+          "end": 6675437,
           "kind": "prepend",
           "data": "./executeCommandLine.js",
           "texts": [
             {
-              "pos": 6515530,
-              "end": 6543287,
+              "pos": 6647108,
+              "end": 6675437,
               "kind": "text"
             }
           ]
         },
         {
-          "pos": 6543287,
-          "end": 6543804,
+          "pos": 6675437,
+          "end": 6675954,
           "kind": "text"
         }
       ],

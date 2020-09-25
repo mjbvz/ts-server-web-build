@@ -151,13 +151,18 @@ declare namespace ts {
         getNewLine?(): string;
     }
     const enum PackageJsonAutoImportPreference {
-        None = 0,
-        ExcludeDevDependencies = 1,
-        All = 2
+        Off = 0,
+        On = 1,
+        Auto = 2
     }
     interface PerformanceEvent {
         kind: "UpdateGraph" | "CreatePackageJsonAutoImportProvider";
         durationMs: number;
+    }
+    enum LanguageServiceMode {
+        Semantic = 0,
+        PartialSemantic = 1,
+        Syntactic = 2
     }
     interface LanguageServiceHost extends GetEffectiveTypeRootsHost {
         getCompilationSettings(): CompilerOptions;
@@ -187,7 +192,7 @@ declare namespace ts {
         hasInvalidatedResolution?: HasInvalidatedResolution;
         hasChangedAutomaticTypeDirectiveNames?: HasChangedAutomaticTypeDirectiveNames;
         getGlobalTypingsCacheLocation?(): string | undefined;
-        getProbableSymlinks?(files: readonly SourceFile[]): ReadonlyESMap<string, string>;
+        getSymlinkCache?(files?: readonly SourceFile[]): SymlinkCache;
         getDirectories?(directoryName: string): string[];
         /**
          * Gets a set of custom transformers to use during emit.
@@ -210,6 +215,10 @@ declare namespace ts {
     type WithMetadata<T> = T & {
         metadata?: unknown;
     };
+    const enum SemanticClassificationFormat {
+        Original = "original",
+        TwentyTwenty = "2020"
+    }
     interface LanguageService {
         /** This is used as a part of restarting the language service. */
         cleanupSemanticCache(): void;
@@ -261,10 +270,22 @@ declare namespace ts {
         getCompilerOptionsDiagnostics(): Diagnostic[];
         /** @deprecated Use getEncodedSyntacticClassifications instead. */
         getSyntacticClassifications(fileName: string, span: TextSpan): ClassifiedSpan[];
+        getSyntacticClassifications(fileName: string, span: TextSpan, format: SemanticClassificationFormat): ClassifiedSpan[] | ClassifiedSpan2020[];
         /** @deprecated Use getEncodedSemanticClassifications instead. */
         getSemanticClassifications(fileName: string, span: TextSpan): ClassifiedSpan[];
+        getSemanticClassifications(fileName: string, span: TextSpan, format: SemanticClassificationFormat): ClassifiedSpan[] | ClassifiedSpan2020[];
+        /** Encoded as triples of [start, length, ClassificationType]. */
         getEncodedSyntacticClassifications(fileName: string, span: TextSpan): Classifications;
-        getEncodedSemanticClassifications(fileName: string, span: TextSpan): Classifications;
+        /**
+         * Gets semantic highlights information for a particular file. Has two formats, an older
+         * version used by VS and a format used by VS Code.
+         *
+         * @param fileName The path to the file
+         * @param position A text span to return results within
+         * @param format Which format to use, defaults to "original"
+         * @returns a number array encoded as triples of [start, length, ClassificationType, ...].
+         */
+        getEncodedSemanticClassifications(fileName: string, span: TextSpan, format?: SemanticClassificationFormat): Classifications;
         /**
          * Gets completion entries at a particular position in a file.
          *
@@ -428,6 +449,10 @@ declare namespace ts {
     interface ClassifiedSpan {
         textSpan: TextSpan;
         classificationType: ClassificationTypeNames;
+    }
+    interface ClassifiedSpan2020 {
+        textSpan: TextSpan;
+        classificationType: number;
     }
     /**
      * Navigation bar interface designed for visual studio's dual-column layout.
@@ -830,6 +855,12 @@ declare namespace ts {
         /** Not true for all global completions. This will be true if the enclosing scope matches a few syntax kinds. See `isSnippetScope`. */
         isGlobalCompletion: boolean;
         isMemberCompletion: boolean;
+        /**
+         * In the absence of `CompletionEntry["replacementSpan"], the editor may choose whether to use
+         * this span or its default one. If `CompletionEntry["replacementSpan"]` is defined, that span
+         * must be used to commit that completion entry.
+         */
+        optionalReplacementSpan?: TextSpan;
         /**
          * true when the current location also allows for a new identifier
          */
@@ -1478,19 +1509,52 @@ declare namespace ts {
     function getSyntacticClassifications(cancellationToken: CancellationToken, sourceFile: SourceFile, span: TextSpan): ClassifiedSpan[];
     function getEncodedSyntacticClassifications(cancellationToken: CancellationToken, sourceFile: SourceFile, span: TextSpan): Classifications;
 }
+/** @internal */
+declare namespace ts.classifier.v2020 {
+    const enum TokenEncodingConsts {
+        typeOffset = 8,
+        modifierMask = 255
+    }
+    const enum TokenType {
+        class = 0,
+        enum = 1,
+        interface = 2,
+        namespace = 3,
+        typeParameter = 4,
+        type = 5,
+        parameter = 6,
+        variable = 7,
+        enumMember = 8,
+        property = 9,
+        function = 10,
+        member = 11
+    }
+    const enum TokenModifier {
+        declaration = 0,
+        static = 1,
+        async = 2,
+        readonly = 3,
+        defaultLibrary = 4,
+        local = 5
+    }
+    /** This is mainly used internally for testing */
+    function getSemanticClassifications(program: Program, cancellationToken: CancellationToken, sourceFile: SourceFile, span: TextSpan): ClassifiedSpan2020[];
+    function getEncodedSemanticClassifications(program: Program, cancellationToken: CancellationToken, sourceFile: SourceFile, span: TextSpan): Classifications;
+}
 declare namespace ts.Completions.StringCompletions {
     function getStringLiteralCompletions(sourceFile: SourceFile, position: number, contextToken: Node | undefined, checker: TypeChecker, options: CompilerOptions, host: LanguageServiceHost, log: Log, preferences: UserPreferences): CompletionInfo | undefined;
     function getStringLiteralCompletionDetails(name: string, sourceFile: SourceFile, position: number, contextToken: Node | undefined, checker: TypeChecker, options: CompilerOptions, host: LanguageServiceHost, cancellationToken: CancellationToken): CompletionEntryDetails | undefined;
 }
 declare namespace ts.Completions {
     export enum SortText {
-        LocationPriority = "0",
-        OptionalMember = "1",
-        MemberDeclaredBySpreadAssignment = "2",
-        SuggestedClassMembers = "3",
-        GlobalsOrKeywords = "4",
-        AutoImportSuggestions = "5",
-        JavascriptIdentifiers = "6"
+        LocalDeclarationPriority = "0",
+        LocationPriority = "1",
+        OptionalMember = "2",
+        MemberDeclaredBySpreadAssignment = "3",
+        SuggestedClassMembers = "4",
+        GlobalsOrKeywords = "5",
+        AutoImportSuggestions = "6",
+        JavascriptIdentifiers = "7"
     }
     export type Log = (message: string) => void;
     /**
@@ -2094,6 +2158,7 @@ declare namespace ts.formatting {
         getCurrentLeadingTrivia(): TextRangeWithKind[] | undefined;
         lastTrailingTriviaWasNewLine(): boolean;
         skipToEndOf(node: Node): void;
+        skipToStartOf(node: Node): void;
     }
     function getFormattingScanner<T>(text: string, languageVariant: LanguageVariant, startPos: number, endPos: number, cb: (scanner: FormattingScanner) => T): T;
 }
@@ -2240,8 +2305,10 @@ declare namespace ts.textChanges {
     enum TrailingTriviaOption {
         /** Exclude all trailing trivia (use getEnd()) */
         Exclude = 0,
+        /** Doesn't include whitespace, but does strip comments */
+        ExcludeWhitespace = 1,
         /** Include trailing trivia */
-        Include = 1
+        Include = 2
     }
     /**
      * Usually node.pos points to a position immediately after the previous token.
@@ -2326,7 +2393,7 @@ declare namespace ts.textChanges {
         insertNodesAtTopOfFile(sourceFile: SourceFile, newNodes: readonly Statement[], blankLineBetween: boolean): void;
         private insertAtTopOfFile;
         insertFirstParameter(sourceFile: SourceFile, parameters: NodeArray<ParameterDeclaration>, newParam: ParameterDeclaration): void;
-        insertNodeBefore(sourceFile: SourceFile, before: Node, newNode: Node, blankLineBetween?: boolean): void;
+        insertNodeBefore(sourceFile: SourceFile, before: Node, newNode: Node, blankLineBetween?: boolean, options?: ConfigurableStartEnd): void;
         insertModifierBefore(sourceFile: SourceFile, modifier: SyntaxKind, before: Node): void;
         insertLastModifierBefore(sourceFile: SourceFile, modifier: SyntaxKind, before: Node): void;
         insertCommentBeforeLine(sourceFile: SourceFile, lineNumber: number, position: number, commentText: string): void;
@@ -2377,7 +2444,7 @@ declare namespace ts.textChanges {
          *    so we can only call this once and can't get the non-formatted text separately.
          */
         getChanges(validate?: ValidateNonFormattedText): FileTextChanges[];
-        createNewFile(oldFile: SourceFile | undefined, fileName: string, statements: readonly Statement[]): void;
+        createNewFile(oldFile: SourceFile | undefined, fileName: string, statements: readonly (Statement | SyntaxKind.NewLineTrivia)[]): void;
     }
     type ValidateNonFormattedText = (node: Node, text: string) => void;
     function getNewFileText(statements: readonly Statement[], scriptKind: ScriptKind, newLineCharacter: string, formatContext: formatting.FormatContext): string;
@@ -2425,6 +2492,8 @@ declare namespace ts.codefix {
     type DeclarationWithType = FunctionLikeDeclaration | VariableDeclaration | PropertySignature | PropertyDeclaration;
     export function parameterShouldGetTypeFromJSDoc(node: Node): node is DeclarationWithType;
     export {};
+}
+declare namespace ts.codefix {
 }
 declare namespace ts.codefix {
 }
@@ -2596,6 +2665,8 @@ declare namespace ts.codefix {
 }
 declare namespace ts.codefix {
 }
+declare namespace ts.codefix {
+}
 declare namespace ts.refactor {
 }
 declare namespace ts.refactor {
@@ -2714,7 +2785,7 @@ declare namespace ts {
         isCancellationRequested(): boolean;
         throwIfCancellationRequested(): void;
     }
-    function createLanguageService(host: LanguageServiceHost, documentRegistry?: DocumentRegistry, syntaxOnly?: boolean): LanguageService;
+    function createLanguageService(host: LanguageServiceHost, documentRegistry?: DocumentRegistry, syntaxOnlyOrLanguageServiceMode?: boolean | LanguageServiceMode): LanguageService;
     /** Names in the name table are escaped, so an identifier `__foo` will have a name table entry `___foo`. */
     function getNameTable(sourceFile: SourceFile): UnderscoreEscapedMap<number>;
     /**
@@ -2841,9 +2912,9 @@ declare namespace ts {
         getSuggestionDiagnostics(fileName: string): string;
         getCompilerOptionsDiagnostics(): string;
         getSyntacticClassifications(fileName: string, start: number, length: number): string;
-        getSemanticClassifications(fileName: string, start: number, length: number): string;
+        getSemanticClassifications(fileName: string, start: number, length: number, format?: SemanticClassificationFormat): string;
         getEncodedSyntacticClassifications(fileName: string, start: number, length: number): string;
-        getEncodedSemanticClassifications(fileName: string, start: number, length: number): string;
+        getEncodedSemanticClassifications(fileName: string, start: number, length: number, format?: SemanticClassificationFormat): string;
         getCompletionsAtPosition(fileName: string, position: number, preferences: UserPreferences | undefined): string;
         getCompletionEntryDetails(fileName: string, position: number, entryName: string, formatOptions: string | undefined, source: string | undefined, preferences: UserPreferences | undefined): string;
         getQuickInfoAtPosition(fileName: string, position: number): string;

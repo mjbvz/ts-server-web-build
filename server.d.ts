@@ -636,6 +636,11 @@ declare namespace ts.server.protocol {
          * so this description should make sense by itself if the parent is inlineable=true
          */
         description: string;
+        /**
+         * A message to show to the user if the refactoring cannot be applied in
+         * the current context.
+         */
+        notApplicableReason?: string;
     }
     interface GetEditsForRefactorRequest extends Request {
         command: CommandTypes.GetEditsForRefactor;
@@ -2058,6 +2063,12 @@ declare namespace ts.server.protocol {
         readonly isGlobalCompletion: boolean;
         readonly isMemberCompletion: boolean;
         readonly isNewIdentifierLocation: boolean;
+        /**
+         * In the absence of `CompletionEntry["replacementSpan"]`, the editor may choose whether to use
+         * this span or its default one. If `CompletionEntry["replacementSpan"]` is defined, that span
+         * must be used to commit that completion entry.
+         */
+        readonly optionalReplacementSpan?: TextSpan;
         readonly entries: readonly CompletionEntry[];
     }
     interface CompletionDetailsResponse extends Response {
@@ -2857,8 +2868,9 @@ declare namespace ts.server.protocol {
         readonly allowTextChangesInNewFiles?: boolean;
         readonly lazyConfiguredProjectsFromExternalProject?: boolean;
         readonly providePrefixAndSuffixTextForRename?: boolean;
+        readonly provideRefactorNotApplicableReason?: boolean;
         readonly allowRenameOfImportPath?: boolean;
-        readonly includePackageJsonAutoImports?: "exclude-dev" | "all" | "none";
+        readonly includePackageJsonAutoImports?: "auto" | "on" | "off";
     }
     interface CompilerOptions {
         allowJs?: boolean;
@@ -3290,7 +3302,7 @@ declare namespace ts.server {
         installPackage(options: InstallPackageOptions): Promise<ApplyCodeActionCommandResult>;
         getGlobalTypingsCacheLocation(): string | undefined;
         private get typingsCache();
-        getProbableSymlinks(files: readonly SourceFile[]): ReadonlyESMap<string, string>;
+        getSymlinkCache(): SymlinkCache;
         getCompilationSettings(): CompilerOptions;
         getCompilerOptions(): CompilerOptions;
         getNewLine(): string;
@@ -3420,6 +3432,7 @@ declare namespace ts.server {
         getPackageJsonsForAutoImport(rootDir?: string): readonly PackageJsonInfo[];
         getImportSuggestionsCache(): Completions.ImportSuggestionsForFileCache;
         includePackageJsonAutoImports(): PackageJsonAutoImportPreference;
+        getModuleResolutionHostForAutoImportProvider(): ModuleResolutionHost;
         getPackageJsonAutoImportProvider(): Program | undefined;
         private isDefaultProjectForOpenFiles;
     }
@@ -3447,6 +3460,7 @@ declare namespace ts.server {
     class AutoImportProviderProject extends Project {
         private hostProject;
         private static readonly newName;
+        private static readonly maxDependencies;
         static getRootFileNames(dependencySelection: PackageJsonAutoImportPreference, hostProject: Project, moduleResolutionHost: ModuleResolutionHost, compilerOptions: CompilerOptions): string[];
         static create(dependencySelection: PackageJsonAutoImportPreference, hostProject: Project, moduleResolutionHost: ModuleResolutionHost, documentRegistry: DocumentRegistry): AutoImportProviderProject | undefined;
         private rootFileNames;
@@ -3457,8 +3471,12 @@ declare namespace ts.server {
         getScriptFileNames(): string[];
         getLanguageService(): never;
         markAutoImportProviderAsDirty(): never;
+        getModuleResolutionHostForAutoImportProvider(): never;
+        getProjectReferences(): readonly ProjectReference[] | undefined;
+        useSourceOfProjectReferenceRedirect(): boolean;
         includePackageJsonAutoImports(): PackageJsonAutoImportPreference;
         getTypeAcquisition(): TypeAcquisition;
+        getSymlinkCache(): SymlinkCache;
     }
     /**
      * If a file is opened, the server will look for a tsconfig (or jsconfig)
@@ -3520,8 +3538,8 @@ declare namespace ts.server {
         addExternalProjectReference(): void;
         deleteExternalProjectReference(): void;
         isSolution(): boolean;
-        /** Find the configured project from the project references in this solution which contains the info directly */
-        getDefaultChildProjectFromSolution(info: ScriptInfo): ConfiguredProject | undefined;
+        /** Find the configured project from the project references in project which contains the info directly */
+        getDefaultChildProjectFromProjectWithReferences(info: ScriptInfo): ConfiguredProject | undefined;
         /** Returns true if the project is needed by any of the open script info/external project */
         hasOpenRef(): boolean;
         hasExternalProjectRef(): boolean;
@@ -3732,7 +3750,9 @@ declare namespace ts.server {
         pluginProbeLocations?: readonly string[];
         allowLocalPluginLoads?: boolean;
         typesMapLocation?: string;
+        /** @deprecated use serverMode instead */
         syntaxOnly?: boolean;
+        serverMode?: LanguageServiceMode;
     }
     /** Kind of operation to perform to get project reference project */
     export enum ProjectReferenceProjectLoadKind {
@@ -3743,8 +3763,8 @@ declare namespace ts.server {
         /** Find existing project or create and load it for the project reference */
         FindCreateLoad = 2
     }
-    export function forEachResolvedProjectReferenceProject<T>(project: ConfiguredProject, cb: (child: ConfiguredProject, configFileName: NormalizedPath) => T | undefined, projectReferenceProjectLoadKind: ProjectReferenceProjectLoadKind.Find | ProjectReferenceProjectLoadKind.FindCreate): T | undefined;
-    export function forEachResolvedProjectReferenceProject<T>(project: ConfiguredProject, cb: (child: ConfiguredProject, configFileName: NormalizedPath) => T | undefined, projectReferenceProjectLoadKind: ProjectReferenceProjectLoadKind.FindCreateLoad, reason: string): T | undefined;
+    export function forEachResolvedProjectReferenceProject<T>(project: ConfiguredProject, cb: (child: ConfiguredProject) => T | undefined, projectReferenceProjectLoadKind: ProjectReferenceProjectLoadKind.Find | ProjectReferenceProjectLoadKind.FindCreate): T | undefined;
+    export function forEachResolvedProjectReferenceProject<T>(project: ConfiguredProject, cb: (child: ConfiguredProject) => T | undefined, projectReferenceProjectLoadKind: ProjectReferenceProjectLoadKind, reason: string): T | undefined;
     export function forEachResolvedProjectReference<T>(project: ConfiguredProject, cb: (resolvedProjectReference: ResolvedProjectReference | undefined, resolvedProjectReferencePath: Path) => T | undefined): T | undefined;
     /** true if script info is part of project and is not in project because it is referenced from project reference source */
     export function projectContainsInfoDirectly(project: Project, info: ScriptInfo): boolean;
@@ -3799,6 +3819,7 @@ declare namespace ts.server {
          * Open files: with value being project root path, and key being Path of the file that is open
          */
         readonly openFiles: Map<NormalizedPath | undefined>;
+        readonly configFileForOpenFiles: ESMap<Path, NormalizedPath | false>;
         /**
          * Map of open files that are opened without complete path but have projectRoot as current directory
          */
@@ -3842,7 +3863,9 @@ declare namespace ts.server {
         readonly allowLocalPluginLoads: boolean;
         private currentPluginConfigOverrides;
         readonly typesMapLocation: string | undefined;
-        readonly syntaxOnly?: boolean;
+        /** @deprecated use serverMode instead */
+        readonly syntaxOnly: boolean;
+        readonly serverMode: LanguageServiceMode;
         /** Tracks projects that we have already sent telemetry for. */
         private readonly seenProjects;
         readonly watchFactory: WatchFactory<WatchType, Project>;
@@ -3997,7 +4020,7 @@ declare namespace ts.server {
         /**
          * Read the config file of the project again by clearing the cache and update the project graph
          */
-        reloadConfiguredProject(project: ConfiguredProject, reason: string): void;
+        reloadConfiguredProject(project: ConfiguredProject, reason: string, isInitialLoad: boolean): void;
         private sendConfigFileDiagEvent;
         private getOrCreateInferredProjectForProjectRootPathIfEnabled;
         private getOrCreateSingleInferredProjectIfEnabled;
@@ -4161,7 +4184,9 @@ declare namespace ts.server {
         eventHandler?: ProjectServiceEventHandler;
         /** Has no effect if eventHandler is also specified. */
         suppressDiagnosticEvents?: boolean;
+        /** @deprecated use serverMode instead */
         syntaxOnly?: boolean;
+        serverMode?: LanguageServiceMode;
         throttleWaitMilliseconds?: number;
         noGetErrOnBackgroundUpdate?: boolean;
         globalPlugins?: readonly string[];
@@ -4169,7 +4194,7 @@ declare namespace ts.server {
         allowLocalPluginLoads?: boolean;
         typesMapLocation?: string;
     }
-    class Session<MessageType extends {} = string> implements EventSender {
+    class Session<MessageType = string> implements EventSender {
         private readonly gcTimer;
         protected projectService: ProjectService;
         private changeSeq;
@@ -4329,6 +4354,7 @@ declare namespace ts.server {
         executeCommand(request: protocol.Request): HandlerResponse;
         onMessage(message: MessageType): void;
         protected parseMessage(message: MessageType): protocol.Request;
+        protected toStringMessage(message: MessageType): string;
         private getFormatOptions;
         private getPreferences;
         private getHostFormatOptions;
